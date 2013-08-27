@@ -1,0 +1,193 @@
+<?php
+class MI_Store
+{
+    private static $_serverUri      = 'http://fs.dalasu.com';
+    private static $_uploadFileName = 'upload.php';    //上传时调用的文件名
+    private static $_readFileName   = 'read.php';      //读取文件时调用的文件名
+    private static $_connectTimeOut = 30;              //连接超时时间，单位：秒
+    private static $_timeOut        = 30;              //响应超时时间，单位：秒
+    private static $_clientId       = 99999;
+    private static $_errorCode      = 0;
+    private static $_errorMsg       = null;
+    private static $_fileSize       = 2097152;         //文件大小，默认为2M
+    private static $_openRandName   = true;            //是否开启随机命名
+    private static $_randRule       = 1;               //随机命名规则(开启随机命名触发)
+    private static $_overWrite      = true;            //是否覆盖同名文件(关闭随机命名触发，若不覆盖，在文件名后加随机字符)
+    private static $_isImage        = true;            //上传图片类型是否为图片(默认为图片)
+    private static $_openWater      = false;           //是否开启水印，默认为false
+    private static $_waterPath      = '';              //水印图片地址(开启水印时触发)
+    private static $_waterSize      = array('w' =>90, 'h' => 90);   //水印大小(宽 X 高)    
+    private static $_waterPosition  = 0;               //水印位置（1~9,0表示随机位置）
+    private static $_imageSize      = array(           //图片尺寸
+                                    array('w' => 90, 'h' => 90),
+                                    array('w' => 350, 'h' => 240),
+                                    array('w' => 850, 'h' => 450),
+                                );
+    private static $_fileType      = array(             //文件类型
+                //applications
+                        'ai'  => 'application/postscript',
+                        'eps' => 'application/postscript',
+                        'exe' => 'application/octet-stream',
+                        'doc' => 'application/vnd.ms-word',
+                        'xls' => 'application/vnd.ms-excel',
+                        'ppt' => 'application/vnd.ms-powerpoint',
+                        'pps' => 'application/vnd.ms-powerpoint',
+                        'pdf' => 'application/pdf',
+                        'xml' => 'application/xml',
+                        'odt' => 'application/vnd.oasis.opendocument.text',
+                        'swf' => 'application/x-shockwave-flash',
+                
+                // archives
+                        'gz'  => 'application/x-gzip',
+                        'tgz' => 'application/x-gzip',
+                        'bz'  => 'application/x-bzip2',
+                        'bz2' => 'application/x-bzip2',
+                        'tbz' => 'application/x-bzip2',
+                        'zip' => 'application/zip',
+                        'rar' => 'application/x-rar',
+                        'tar' => 'application/x-tar',
+                        '7z'  => 'application/x-7z-compressed',
+                
+                // texts
+                        'txt'  => 'text/plain',
+                        'php'  => 'text/x-php',
+                        'html' => 'text/html',
+                        'htm'  => 'text/html',
+                        'js'   => 'text/javascript',
+                        'css'  => 'text/css',
+                        'rtf'  => 'text/rtf',
+                        'rtfd' => 'text/rtfd',
+                        'py'   => 'text/x-python',
+                        'java' => 'text/x-java-source',
+                        'rb'   => 'text/x-ruby',
+                        'sh'   => 'text/x-shellscript',
+                        'pl'   => 'text/x-perl',
+                        'sql'  => 'text/x-sql',
+                        
+                // images
+                        'bmp'  => 'image/x-ms-bmp',
+                        'jpg'  => 'image/jpeg',
+                        'jpeg' => 'image/jpeg',
+                        'gif'  => 'image/gif',
+                        'png'  => 'image/png',
+                        'tif'  => 'image/tiff',
+                        'tiff' => 'image/tiff',
+                        'tga'  => 'image/x-targa',
+                        'psd'  => 'image/vnd.adobe.photoshop',
+                
+                //audio
+                        'mp3'  => 'audio/mpeg',
+                        'mid'  => 'audio/midi',
+                        'ogg'  => 'audio/ogg',
+                        'mp4a' => 'audio/mp4',
+                        'wav'  => 'audio/wav',
+                        'wma'  => 'audio/x-ms-wma',
+                
+                // video
+                        'avi'  => 'video/x-msvideo',
+                        'dv'   => 'video/x-dv',
+                        'mp4'  => 'video/mp4',
+                        'mpeg' => 'video/mpeg',
+                        'mpg'  => 'video/mpeg',
+                        'mov'  => 'video/quicktime',
+                        'wm'   => 'video/x-ms-wmv',
+                        'flv'  => 'video/x-flv',
+                        'mkv'  => 'video/x-matroska',
+           );
+    
+    
+    public static function setConfig($conf) {
+        if (isset($conf['time_out']))         self::$_timeout = (int)$conf['time_out'];
+        if (isset($conf['connect_time_out'])) self::$_connectTimeOut = (int)$conf['connect_time_out'];
+        if (isset($conf['client_id']))        self::$_clientId = (int)$conf['client_id'];
+        if (isset($conf['server_uri']))       self::$_serverUri = $conf['server_uri'];
+        if (isset($conf['upload_file_name'])) self::$_uploadFileName = $conf['upload_file_name'];
+        if (isset($conf['read_file_name']))   self::$_readFileName = $conf['read_file_name'];
+        if (isset($conf['file_type']))        self::$_fileType = $conf['file_type'];
+        if (isset($conf['file_size']))        self::$_fileSize = $conf['file_size'];
+        if (isset($conf['open_rand_name']))   self::$_openRandName = $conf['open_rand_name'];
+        if (isset($conf['rand_rule']))        self::$_randRule = (int)$conf['rand_rule'];
+        if (isset($conf['over_write']))       self::$_overWrite = $conf['over_write'];
+        if (isset($conf['is_image']))         self::$_isImage = $conf['is_image'];
+        if (isset($conf['open_water']))       self::$_openWater = $conf['open_water'];
+        if (isset($conf['water_path']))       self::$_waterPath = $conf['water_path'];
+        if (isset($conf['water_size']))       self::$_waterSize = $conf['water_size'];
+        if (isset($conf['water_position']))   self::$_waterPosition = (int)$conf['water_postion'];
+        if (isset($conf['image_size']))       self::$_imageSize = $conf['image_size'];
+    }
+    
+    public static function uploadFile($file, $params = array()) {
+        if (!(is_array($file))) return FALSE;
+        $res =  self::curlUploadFileApi($file, $params);
+        
+        $ret = json_decode($res,TRUE);
+        if(is_array($ret) && $ret['code'] == 0) {
+            if(self::$_errorMsg) {
+                self::$_errorMsg = NULL;
+            }
+            return $ret['data'];
+        } else {
+            self::$_errorMsg = $ret['msg'] ? $ret['msg'] : '未知错误';
+            return FALSE;
+        }
+    }
+    
+    /**
+     * 将文件上传至$url
+     * @param   $url        string  上传地址
+     * @param   $file   string  文件信息
+     * @param   $params     array   需要顺路上传的参数
+     * @return  string|bool json字符串|false
+     * **/
+    public static function curlUploadFileApi($file, $params = array()) {
+        $url    = self::$_serverUri.'/'.self::$_uploadFileName;
+        $config = self::_createSendConfig();
+        $ci     = curl_init();
+        $params['file'] =  '@'.$file['tmp_name'].";type=".$file['type'].";";
+        $params['config'] = $config;
+        curl_setopt($ci, CURLOPT_CONNECTTIMEOUT, self::$_connectTimeOut);
+        curl_setopt($ci, CURLOPT_TIMEOUT, self::$_timeOut);
+        curl_setopt($ci, CURLOPT_POST, TRUE);
+        curl_setopt($ci, CURLOPT_URL, $url);
+        curl_setopt($ci, CURLOPT_POSTFIELDS, $params);
+        ob_start();
+        curl_exec($ci);
+        $res    = ob_get_contents();
+        ob_end_clean();
+        $httpCode = curl_getinfo($ci, CURLINFO_HTTP_CODE);
+        
+        curl_close($ci);
+        if(200 == $httpCode) {
+            return $res;
+        }
+    }
+    
+    private static function _createSendConfig() {
+        $tmpArr = array(
+                    'file_size' => self::$_fileSize,
+                    'open_rand_name' => self::$_openRandName,
+                    'rand_rule' => self::$_randRule,
+                    'over_write' => self::$_overWrite,
+                    'is_image' => self::$_isImage,
+                    'open_water' => self::$_openWater,
+                    'water_path' => self::$_waterPath,
+                    'water_position' => self::$_waterPosition,
+                    'image_size' => json_encode(self::$_imageSize),
+                    'file_type' => json_encode(self::$_fileType),
+                );
+       return json_encode($tmpArr);
+    }
+    
+    public static function setError($code = 0, $msg = "")
+    {
+        self::$_errorCode = $code;
+        self::$_errorMsg  = $msg;
+
+    }
+
+    public static function clearError()
+    {
+        self::$_errorCode = 0;
+        self::$_errorMsg  = "";
+    }
+}
